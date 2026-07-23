@@ -2485,9 +2485,24 @@ export default function App() {
 
       </div>
 
+      {/* Mobile Floating Action Button to quickly jump to Beaker when chemicals are poured */}
+      {activeMobileView === "chemicals" && selectedReactants.length > 0 && (
+        <button
+          onClick={() => {
+            setActiveMobileView("reactor");
+            playSynthSound("beep");
+          }}
+          className="fixed bottom-20 right-4 z-50 bg-gradient-to-r from-indigo-600 via-indigo-700 to-cyan-600 text-white font-bold text-xs px-4 py-3 rounded-full shadow-[0_0_25px_rgba(99,102,241,0.6)] border border-indigo-400 flex items-center gap-2 animate-bounce cursor-pointer active:scale-95 transition-all md:hidden"
+          id="mobile-floating-beaker-btn"
+        >
+          <span>🧪 الانتقال إلى المفاعل ({selectedReactants.length})</span>
+          <ArrowRight className="w-4 h-4 rotate-180" />
+        </button>
+      )}
+
       {/* Mobile Bottom Navigation Bar */}
       <div 
-        className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-white/10 p-2 md:hidden flex justify-around items-center backdrop-blur-md shadow-2xl"
+        className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-white/10 p-1.5 md:hidden flex justify-around items-center backdrop-blur-lg shadow-2xl touch-manipulation"
         id="mobile-navigation-bar"
       >
         <button
@@ -2495,8 +2510,8 @@ export default function App() {
             setActiveMobileView("chemicals");
             playSynthSound("beep");
           }}
-          className={`flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-bold uppercase transition-all rounded-lg min-h-[44px] ${
-            activeMobileView === "chemicals" ? "text-cyan-400 bg-cyan-500/10 font-bold" : "text-slate-400 hover:text-slate-200"
+          className={`flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-bold uppercase transition-all rounded-xl min-h-[48px] active:scale-95 ${
+            activeMobileView === "chemicals" ? "text-cyan-400 bg-cyan-500/15 border border-cyan-500/30 font-bold shadow-sm" : "text-slate-400 hover:text-slate-200"
           }`}
           id="mobile-nav-btn-chemicals"
         >
@@ -2509,11 +2524,16 @@ export default function App() {
             setActiveMobileView("reactor");
             playSynthSound("beep");
           }}
-          className={`flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-bold uppercase transition-all rounded-lg min-h-[44px] ${
-            activeMobileView === "reactor" ? "text-indigo-400 bg-indigo-500/10 font-bold" : "text-slate-400 hover:text-slate-200"
+          className={`flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-bold uppercase transition-all rounded-xl min-h-[48px] active:scale-95 relative ${
+            activeMobileView === "reactor" ? "text-indigo-400 bg-indigo-500/15 border border-indigo-500/30 font-bold shadow-sm" : "text-slate-400 hover:text-slate-200"
           }`}
           id="mobile-nav-btn-reactor"
         >
+          {selectedReactants.length > 0 && (
+            <span className="absolute top-1 right-3 bg-indigo-500 text-white text-[9px] font-mono font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white/20 animate-pulse">
+              {selectedReactants.length}
+            </span>
+          )}
           <Flame className="w-5 h-5 mb-0.5" />
           <span>المفاعل الكيميائي</span>
         </button>
@@ -2523,8 +2543,8 @@ export default function App() {
             setActiveMobileView("results");
             playSynthSound("beep");
           }}
-          className={`flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-bold uppercase transition-all rounded-lg min-h-[44px] ${
-            activeMobileView === "results" ? "text-emerald-400 bg-emerald-500/10 font-bold" : "text-slate-400 hover:text-slate-200"
+          className={`flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-bold uppercase transition-all rounded-xl min-h-[48px] active:scale-95 ${
+            activeMobileView === "results" ? "text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 font-bold shadow-sm" : "text-slate-400 hover:text-slate-200"
           }`}
           id="mobile-nav-btn-results"
         >
@@ -2567,9 +2587,14 @@ export default function App() {
             {/* Modal Split View */}
             <div className="flex-1 flex flex-col lg:flex-row-reverse overflow-hidden">
               {/* Grid content container on right for Arabic layout flow */}
-              <div className="flex-1 overflow-auto p-4 flex flex-col justify-center min-h-[300px]">
+              <div className="flex-1 overflow-auto p-3 sm:p-4 flex flex-col justify-start sm:justify-center min-h-[300px]">
+                {/* Mobile scroll swipe indicator */}
+                <div className="lg:hidden text-[10px] text-indigo-300 bg-indigo-950/70 px-3 py-1.5 rounded-xl border border-indigo-500/30 mb-2 text-center flex items-center justify-center gap-1.5 font-bold shadow-sm">
+                  <span>👈 اسحب اللوحة أفقياً لتصفح جميع مجموعات وعناصر الجدول الدوري 18 👉</span>
+                </div>
+
                 {/* Dynamic periodic table representation */}
-                <div className="min-w-[800px] mx-auto space-y-1.5" id="periodic-table-grid-wrapper" dir="ltr">
+                <div className="min-w-[780px] sm:min-w-[800px] mx-auto space-y-1.5 overflow-x-auto pb-2" id="periodic-table-grid-wrapper" dir="ltr">
                   {/* Table Rows (Periods 1 to 7) */}
                   {Array.from({ length: 7 }, (_, i) => i + 1).map((pPeriod) => (
                     <div 

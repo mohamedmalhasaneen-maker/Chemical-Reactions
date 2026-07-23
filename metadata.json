@@ -1,0 +1,8 @@
+{
+  "name": " التفاعلات الكيميائيه المعدل ",
+  "description": "مختبر كيمياء افتراضي تفاعلي مجهز بمحاكاة تصادم الجزيئات وتحولها لمركبات ناتجة بصرياً ثنائية الأبعاد بدقة فائقة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

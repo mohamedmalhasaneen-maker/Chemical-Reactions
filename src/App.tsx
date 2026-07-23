@@ -143,6 +143,44 @@ export default function App() {
 
   // Active view on mobile viewports: chemicals, reactor, or results
   const [activeMobileView, setActiveMobileView] = useState<"chemicals" | "reactor" | "results">("reactor");
+  const mobileScrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToMobileView = (view: "chemicals" | "reactor" | "results") => {
+    setActiveMobileView(view);
+    if (mobileScrollContainerRef.current) {
+      const container = mobileScrollContainerRef.current;
+      const targetIndex = view === "chemicals" ? 0 : view === "reactor" ? 1 : 2;
+      const targetElement = container.children[targetIndex] as HTMLElement;
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  };
+
+  const handleMobileScroll = () => {
+    if (!mobileScrollContainerRef.current) return;
+    if (window.innerWidth >= 768) return; // Only sync scroll active view on mobile
+
+    const container = mobileScrollContainerRef.current;
+    const children = Array.from(container.children) as HTMLElement[];
+    const containerCenter = container.scrollLeft + container.clientWidth / 2;
+
+    let closestIndex = 1;
+    let minDiff = Infinity;
+    children.forEach((child, idx) => {
+      const childCenter = child.offsetLeft + child.clientWidth / 2;
+      const diff = Math.abs(childCenter - containerCenter);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = idx;
+      }
+    });
+
+    const views: ("chemicals" | "reactor" | "results")[] = ["chemicals", "reactor", "results"];
+    if (views[closestIndex] && views[closestIndex] !== activeMobileView) {
+      setActiveMobileView(views[closestIndex]);
+    }
+  };
 
   // Audio Context Ref for synthetic physical sound effects
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -1222,11 +1260,45 @@ export default function App() {
         </div>
       </nav>
 
+      {/* Mobile Top iPad-Style Status Banner */}
+      <div className="md:hidden bg-[#0A0A0D] border-b border-white/10 px-3 py-1.5 flex items-center justify-between text-[10px] font-mono flex-row-reverse text-slate-400 select-none shadow-md">
+        <div className="flex items-center gap-2 flex-row-reverse">
+          <span className="text-cyan-400 font-bold">🧪 مختبر الكيمياء الافتراضي (iPad Touch)</span>
+          <span className="bg-white/5 px-1.5 py-0.5 rounded text-[9px] text-slate-300">
+            {activeMobileView === "chemicals" ? "1/3 المواد" : activeMobileView === "reactor" ? "2/3 المفاعل" : "3/3 التحليل"}
+          </span>
+        </div>
+
+        {/* Indicator dots for swiping between panels */}
+        <div className="flex items-center gap-1.5 flex-row-reverse">
+          <button 
+            onClick={() => scrollToMobileView("chemicals")}
+            className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${activeMobileView === "chemicals" ? "bg-cyan-400 scale-125 shadow-[0_0_8px_#22d3ee]" : "bg-white/20"}`}
+            title="المواد والكواشف"
+          />
+          <button 
+            onClick={() => scrollToMobileView("reactor")}
+            className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${activeMobileView === "reactor" ? "bg-indigo-400 scale-125 shadow-[0_0_8px_#818cf8]" : "bg-white/20"}`}
+            title="المفاعل الزجاجي"
+          />
+          <button 
+            onClick={() => scrollToMobileView("results")}
+            className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${activeMobileView === "results" ? "bg-emerald-400 scale-125 shadow-[0_0_8px_#34d399]" : "bg-white/20"}`}
+            title="نتائج التحليل"
+          />
+        </div>
+      </div>
+
       {/* Workspace Core Area */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-[500px] pb-16 md:pb-0" id="workspace-main-panel">
+      <div 
+        ref={mobileScrollContainerRef}
+        onScroll={handleMobileScroll}
+        className="flex-1 flex flex-row overflow-x-auto md:overflow-hidden snap-x snap-mandatory scroll-smooth w-full min-h-[500px] pb-16 md:pb-0 scrollbar-none touch-pan-x bg-[#0a0a0c]" 
+        id="workspace-main-panel"
+      >
         
         {/* Left Drawer Shelf: Chemical Selection & Custom Formula Creator */}
-        <aside className={`w-full md:w-80 border-b md:border-b-0 md:border-l border-white/10 bg-[#0E0E11] p-4 flex flex-col gap-4 overflow-y-auto flex-shrink-0 ${activeMobileView === "chemicals" ? "flex" : "hidden md:flex"}`} id="left-shelf">
+        <aside className="w-full md:w-80 flex-shrink-0 snap-center border-b md:border-b-0 md:border-l border-white/10 bg-[#0E0E11] p-3.5 sm:p-4 flex flex-col gap-4 overflow-y-auto h-full" id="left-shelf">
           
           {/* Periodic Table & University Tools Buttons */}
           <div className="flex flex-col gap-2" id="shelf-academic-tools">
@@ -1542,7 +1614,7 @@ export default function App() {
         </aside>
 
         {/* Center Section: Main Interactive Lab Bench Reaction Vessel Simulation */}
-        <main className={`flex-1 bg-gradient-to-b from-[#111115] to-[#0A0A0B] flex flex-col items-center justify-between p-4 relative ${activeMobileView === "reactor" ? "flex" : "hidden md:flex"}`} id="reactor-bench">
+        <main className="w-full md:flex-1 flex-shrink-0 snap-center bg-gradient-to-b from-[#111115] to-[#0A0A0B] flex flex-col items-center justify-between p-3 sm:p-4 relative overflow-y-auto h-full" id="reactor-bench">
           
           {/* Reaction environment context indices floating on left */}
           <div className="absolute top-4 right-4 space-y-1.5 text-right pointer-events-none z-10" id="chamber-labels">
@@ -2113,7 +2185,7 @@ export default function App() {
         </main>
 
         {/* Right Tabbed Panel: Analytics Feed, Course Lessons, & Earned Badges */}
-        <aside className={`w-full md:w-80 border-t md:border-t-0 md:border-r border-white/10 bg-[#0E0E11] flex flex-col overflow-hidden flex-shrink-0 animate-in fade-in ${activeMobileView === "results" ? "flex" : "hidden md:flex"}`} id="right-tab-panel">
+        <aside className="w-full md:w-80 flex-shrink-0 snap-center border-t md:border-t-0 md:border-r border-white/10 bg-[#0E0E11] flex flex-col overflow-y-auto h-full" id="right-tab-panel">
           
           {/* Sidebar Tab Triggers */}
           <div className="flex border-b border-white/10 p-2 gap-1 bg-[#0A0A0C] flex-row-reverse" id="sidebar-tab-header">
@@ -2489,7 +2561,7 @@ export default function App() {
       {activeMobileView === "chemicals" && selectedReactants.length > 0 && (
         <button
           onClick={() => {
-            setActiveMobileView("reactor");
+            scrollToMobileView("reactor");
             playSynthSound("beep");
           }}
           className="fixed bottom-20 right-4 z-50 bg-gradient-to-r from-indigo-600 via-indigo-700 to-cyan-600 text-white font-bold text-xs px-4 py-3 rounded-full shadow-[0_0_25px_rgba(99,102,241,0.6)] border border-indigo-400 flex items-center gap-2 animate-bounce cursor-pointer active:scale-95 transition-all md:hidden"
@@ -2507,7 +2579,7 @@ export default function App() {
       >
         <button
           onClick={() => {
-            setActiveMobileView("chemicals");
+            scrollToMobileView("chemicals");
             playSynthSound("beep");
           }}
           className={`flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-bold uppercase transition-all rounded-xl min-h-[48px] active:scale-95 ${
@@ -2521,7 +2593,7 @@ export default function App() {
 
         <button
           onClick={() => {
-            setActiveMobileView("reactor");
+            scrollToMobileView("reactor");
             playSynthSound("beep");
           }}
           className={`flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-bold uppercase transition-all rounded-xl min-h-[48px] active:scale-95 relative ${
@@ -2540,7 +2612,7 @@ export default function App() {
 
         <button
           onClick={() => {
-            setActiveMobileView("results");
+            scrollToMobileView("results");
             playSynthSound("beep");
           }}
           className={`flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-bold uppercase transition-all rounded-xl min-h-[48px] active:scale-95 ${

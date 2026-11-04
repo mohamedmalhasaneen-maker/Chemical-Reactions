@@ -25,7 +25,9 @@ import {
   X,
   Volume2,
   VolumeX,
-  Thermometer
+  Thermometer,
+  Sun,
+  Moon
 } from "lucide-react";
 
 import { CHEMICAL_DATABASE, PREDEFINED_REACTIONS, EXPERIMENT_LESSONS, CHEMISTRY_BADGES } from "./data";
@@ -140,6 +142,26 @@ export default function App() {
 
   // Active sidebar tab
   const [activeTab, setActiveTab] = useState<"analytics" | "lessons" | "badges">("analytics");
+
+  // Theme Mode (Dark Cybernetic / Light Academic)
+  const [themeMode, setThemeMode] = useState<"dark" | "light">(() => {
+    try {
+      const saved = localStorage.getItem("chem_lab_theme");
+      return saved === "light" ? "light" : "dark";
+    } catch {
+      return "dark";
+    }
+  });
+
+  const toggleThemeMode = () => {
+    const nextTheme = themeMode === "dark" ? "light" : "dark";
+    setThemeMode(nextTheme);
+    try {
+      localStorage.setItem("chem_lab_theme", nextTheme);
+    } catch (e) {
+      console.warn("Could not save theme preference", e);
+    }
+  };
 
   // Active view on mobile viewports: chemicals, reactor, or results
   const [activeMobileView, setActiveMobileView] = useState<"chemicals" | "reactor" | "results">("reactor");
@@ -1057,7 +1079,7 @@ export default function App() {
   };
 
   return (
-    <div className="w-full min-h-full bg-[#0A0A0B] text-slate-300 flex flex-col font-sans select-none relative overflow-x-hidden md:h-screen md:overflow-y-hidden" id="virtual-lab-dashboard" dir="rtl">
+    <div className={`w-full min-h-full ${themeMode === "light" ? "bg-[#eef2f6] text-slate-900" : "bg-[#07070A] text-slate-300"} flex flex-col font-sans select-none relative overflow-x-hidden md:h-screen md:overflow-y-hidden`} id="virtual-lab-dashboard" dir="rtl">
       
       {/* Dynamic Toast System */}
       {toastMessage && (
@@ -1079,22 +1101,22 @@ export default function App() {
       )}
 
       {/* Top Cybernetic Nav / Lab Header */}
-      <nav className="min-h-[5rem] h-auto md:h-20 border-b border-white/15 flex flex-col md:flex-row items-center justify-between px-4 md:px-6 bg-[#0E0E12] gap-4 py-3 md:py-0 flex-shrink-0 relative z-30" id="lab-header">
+      <nav className={`min-h-[5rem] h-auto md:h-20 border-b ${themeMode === "light" ? "border-slate-300 bg-white/90 text-slate-900" : "border-white/10 bg-[#0C0C10]/90 text-slate-100"} backdrop-blur-md flex flex-col md:flex-row items-center justify-between px-4 md:px-6 gap-4 py-3 md:py-0 flex-shrink-0 relative z-30 shadow-lg`} id="lab-header">
         <div className="flex items-center gap-4 flex-row-reverse md:flex-row justify-between w-full md:w-auto">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-indigo-650 flex items-center justify-center border border-indigo-500/50 shadow-lg shadow-indigo-500/10 hover:scale-105 transition-transform" id="nav-badge">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-cyan-600 flex items-center justify-center border border-indigo-400/40 shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all cursor-pointer glass-icon" id="nav-badge">
               <span className="text-white font-display font-medium text-xl md:text-2xl">🧪</span>
             </div>
             <div className="text-right">
               <div className="flex items-center gap-1.5 flex-row-reverse justify-end">
-                <h1 className="text-white font-display font-extra-bold text-sm md:text-lg tracking-wide" id="app-title-main">المختبر الكيميائي الافتراضي</h1>
+                <h1 className={`font-display font-black text-base md:text-lg tracking-wide ${themeMode === "light" ? "text-slate-900" : "text-white"}`} id="app-title-main">المختبر الكيميائي الافتراضي</h1>
                 {activeLessonId && (
-                  <span className="px-1.5 py-0.5 bg-indigo-500/25 border border-indigo-500/50 text-indigo-300 text-[9px] font-mono rounded font-bold uppercase" id="lesson-active-tag">
+                  <span className="px-1.5 py-0.5 bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 text-[9px] font-mono rounded font-bold uppercase" id="lesson-active-tag">
                     الدرس نشط
                   </span>
                 )}
               </div>
-              <p className="text-[9px] md:text-[10px] text-slate-450 font-mono mt-0.5" id="app-status-indicator">
+              <p className={`text-[9px] md:text-[10px] font-mono mt-0.5 ${themeMode === "light" ? "text-slate-600" : "text-slate-400"}`} id="app-status-indicator">
                 جلسة العمل: مساحة الطالب الأكاديمية • {activeLessonId ? `تعليم موجه ومبني على الأهداف` : `دراسة حرة (تحكم كامل وبحث حر)`}
               </p>
             </div>
@@ -1102,31 +1124,32 @@ export default function App() {
         </div>
 
         {/* Dynamic Achievements & Stats Counter */}
-        <div className="flex items-center gap-2 md:gap-4 flex-wrap justify-center w-full md:w-auto" id="header-stats-panel">
+        <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-center w-full md:w-auto" id="header-stats-panel">
           
           {/* Points Counter */}
-          <div className="bg-white/5 border border-white/15 px-3 py-1.5 rounded-lg flex items-center gap-2" id="score-counter-box">
-            <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+          <div className="glass-card px-3 py-1.5 rounded-xl flex items-center gap-2" id="score-counter-box">
+            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
             <div className="text-right">
               <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">النقاط الأكاديمية</div>
-              <div className="text-sm font-mono font-bold text-yellow-400" id="student-score-val">{userStats.scorePoints} XP</div>
+              <div className="text-xs font-mono font-bold text-amber-400" id="student-score-val">{userStats.scorePoints} XP</div>
             </div>
           </div>
 
           {/* Badges Earned */}
-          <div className="bg-white/5 border border-white/15 px-3 py-1.5 rounded-lg flex items-center gap-2" id="badge-counter-box">
+          <div className="glass-card px-3 py-1.5 rounded-xl flex items-center gap-2" id="badge-counter-box">
             <Award className="w-4 h-4 text-emerald-400" />
             <div className="text-right">
               <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">الأوسمة والشهادات</div>
-              <div className="text-sm font-mono font-bold text-emerald-400">{userStats.unlockedBadges.length} / {CHEMISTRY_BADGES.length}</div>
+              <div className="text-xs font-mono font-bold text-emerald-400">{userStats.unlockedBadges.length} / {CHEMISTRY_BADGES.length}</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg relative">
+          {/* Header Controls: Sound, Volume, Theme */}
+          <div className="flex items-center gap-1.5 glass-card p-1 rounded-xl relative">
             <button 
               onClick={() => setSynthSoundEnabled(!synthSoundEnabled)} 
               title={synthSoundEnabled ? "كتم المؤثرات الصوتية" : "تشغيل المؤثرات الصوتية"}
-              className={`p-1.5 rounded-md transition-colors ${synthSoundEnabled ? "text-indigo-400 bg-indigo-500/10" : "text-slate-500 hover:text-slate-300"}`}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${synthSoundEnabled ? "text-indigo-400 bg-indigo-500/15" : "text-slate-400 hover:text-slate-200"}`}
               id="sound-toggle-btn"
             >
               {synthSoundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -1134,10 +1157,18 @@ export default function App() {
             <button 
               onClick={() => setShowVolumeControls(!showVolumeControls)} 
               title="التحكم بمستوى الصوت للمؤثرات"
-              className={`p-1.5 rounded-md transition-all ${showVolumeControls ? "text-cyan-400 bg-cyan-500/10" : "text-slate-400 hover:text-slate-200 hover:bg-white/5"}`}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${showVolumeControls ? "text-cyan-400 bg-cyan-500/15" : "text-slate-400 hover:text-slate-200"}`}
               id="volume-sliders-toggle-btn"
             >
               <Sliders className="w-4 h-4" />
+            </button>
+            <button
+              onClick={toggleThemeMode}
+              title={themeMode === "dark" ? "التحويل للوضع النهاري الناصع" : "التحويل للوضع الليلي المستقبلي"}
+              className="p-1.5 rounded-lg text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 transition-all cursor-pointer"
+              id="theme-toggle-btn"
+            >
+              {themeMode === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-indigo-400" />}
             </button>
 
             {/* Volume settings dropdown card */}

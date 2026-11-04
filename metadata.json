@@ -1,6 +1,6 @@
 {
-  "name": " التفاعلات الكيميائيه المعدل ",
-  "description": "مختبر كيمياء افتراضي تفاعلي مجهز بمحاكاة تصادم الجزيئات وتحولها لمركبات ناتجة بصرياً ثنائية الأبعاد بدقة فائقة.",
+  "name": "متجر المحلاوي - Al Mahlawy Store",
+  "description": "متجر رسمي لإلكترونيات والملابس والأحذية مع نظام تعليقات وتقييمات تفاعلي آمن ومحمي بقواعد Firestore Security Rules.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Catch-All Security Gate
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Developer / Admin verification (by email or admin collection record)
+    function isDeveloper() {
+      return isSignedIn() && (
+        request.auth.token.email == 'mohamed.m.alhasaneen@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Comment Validation Helper ---
+    function isValidNewComment(data) {
+      return data.keys().hasAll(['name', 'comment', 'rating', 'productId', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['name', 'comment', 'rating', 'productId', 'status', 'createdAt']) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 50 &&
+        data.comment is string && data.comment.size() >= 2 && data.comment.size() <= 500 &&
+        data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+        data.productId is string && data.productId.size() >= 1 && data.productId.size() <= 100 &&
+        data.status == 'pending' &&
+        (data.createdAt is timestamp || (data.createdAt is string && data.createdAt.size() <= 100));
+    }
+
+    // --- Comments Collection Rules ---
+    match /comments/{commentId} {
+      // 1. Visitors (registered or unregistered) can ONLY create comments with status 'pending' and valid fields
+      allow create: if isValidId(commentId) && isValidNewComment(incoming());
+
+      // 2. Visitors can ONLY read approved comments. Developer can read all comments (pending, approved, rejected)
+      allow get, list: if resource.data.status == 'approved' || isDeveloper();
+
+      // 3. Visitors CANNOT update or delete comments. Only authorized developer can update approval status or delete
+      allow update, delete: if isDeveloper();
+    }
+
+    // --- Products Collection Rules ---
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isDeveloper();
+    }
+
+    // --- Orders Collection Rules ---
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if isDeveloper();
+    }
+
+    // --- Admins Collection Rules ---
+    match /admins/{userId} {
+      allow read, write: if isDeveloper();
+    }
+
+    // --- Store Settings Collection Rules ---
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isDeveloper();
+    }
+  }
+}

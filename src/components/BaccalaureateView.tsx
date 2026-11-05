@@ -290,17 +290,7 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 selection:bg-cyan-500 selection:text-black">
-      {/* Simplified Breadcrumb/Header */}
-      <section className="relative overflow-hidden border-b border-slate-800 bg-slate-950 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="relative mx-auto max-w-7xl flex items-center justify-between">
-          <h1 className="text-xl font-extrabold text-white">منصة كيمياء البكالوريا</h1>
-          <div className="text-xs text-slate-400 font-mono">
-            {view === 'selection' && "الرئيسية ← اختيار الجزء"}
-            {view === 'list' && `الرئيسية ← اختيار الجزء ← الجزء ${selectedPartNum === 1 ? 'الأول' : 'الثاني'}`}
-            {view === 'reader' && "الرئيسية ← ... ← الدرس"}
-          </div>
-        </div>
-      </section>
+
 
       {/* Main Container */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

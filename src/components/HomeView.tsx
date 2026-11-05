@@ -691,7 +691,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             {/* Developer Profile Card */}
             <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center gap-3">
               <img
-                src="/public/assets/aistudio/WhatsApp_Image_2026-09-10_at_11.57.19_PM_b38793ef.jpeg"
+                src="/assets/aistudio/WhatsApp_Image_2026-09-10_at_11.57.19_PM_b38793ef.jpeg"
                 alt="محمد محمود"
                 className="h-11 w-11 shrink-0 rounded-full object-cover border-2 border-blue-500/50 shadow-md"
               />

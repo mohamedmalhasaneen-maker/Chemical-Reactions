@@ -3,8 +3,10 @@ import {
   ArrowLeft,
   Atom,
   BookOpenCheck,
+  ExternalLink,
   Flame,
   FlaskConical,
+  Globe,
   GraduationCap,
   Microscope,
   Play,
@@ -24,6 +26,7 @@ import { PERIODIC_ELEMENTS } from "../periodicTableData";
 import { GlassIcon, GlassTone } from "./GlassIcon";
 import { ChemicalEquation } from "./ChemicalFormula";
 import { HeroMolecularCanvas } from "./HeroMolecularCanvas";
+import { DeveloperAuditReportModal } from "./baccalaureate/DeveloperAuditReportModal";
 
 import { playSound } from "../utils/soundEngine";
 import heroReactorImg from "../assets/images/hero_molecular_reactor_1793813032279.jpg";
@@ -75,6 +78,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 }) => {
   const [previewIdx, setPreviewIdx] = useState(0);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const [isAuditReportOpen, setIsAuditReportOpen] = useState(false);
 
   const currentPreview = HERO_PREVIEW_KEYS[previewIdx];
   const sortedKey = [...currentPreview.reactantIds].sort().join("+");
@@ -689,24 +693,63 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
             {/* Developer Profile Card */}
-            <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center gap-3">
-              <img
-                src="/assets/aistudio/WhatsApp_Image_2026-09-10_at_11.57.19_PM_b38793ef.jpeg"
-                alt="محمد محمود"
-                className="h-11 w-11 shrink-0 rounded-full object-cover border-2 border-blue-500/50 shadow-md"
-              />
-              <div className="space-y-0.5 min-w-0">
-                <span className="block text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                  إعداد المطور
-                </span>
-                <span className="block text-sm font-extrabold text-slate-900 dark:text-white truncate">
-                  محمد محمود
-                </span>
+            <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/assets/aistudio/WhatsApp_Image_2026-09-10_at_11.57.19_PM_b38793ef.jpeg"
+                  alt="محمد محمود"
+                  className="h-11 w-11 shrink-0 rounded-full object-cover border-2 border-blue-500/50 shadow-md"
+                />
+                <div className="space-y-0.5 min-w-0">
+                  <span className="block text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                    إعداد المطور
+                  </span>
+                  <span className="block text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                    محمد محمود
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAuditReportOpen(true);
+                    playSound("modal_open");
+                  }}
+                  title="عرض تقرير المراجعة والتدقيق العلمي المعتمد لجميع دروس بكالوريا الكيمياء"
+                  className="group inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 px-3.5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 transition-all active:scale-95 shadow-xs shrink-0"
+                >
+                  <ShieldCheck size={15} className="text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <span>📋 تقرير التدقيق العلمي لكتاب الوزارة</span>
+                </button>
+
+                <a
+                  href="https://mohamed-mahmoud-official.vercel.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="🌐 موقع المطور | Mohamed Mahmoud"
+                  className="group inline-flex items-center gap-2 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 hover:from-cyan-500/20 hover:to-blue-500/20 px-3.5 py-2 text-xs font-bold text-cyan-700 dark:text-cyan-300 transition-all active:scale-95 shadow-xs shrink-0"
+                >
+                  <Globe size={15} className="text-cyan-600 dark:text-cyan-400 group-hover:rotate-12 transition-transform" />
+                  <span>🌐 موقع المطور | Mohamed Mahmoud</span>
+                  <ExternalLink size={13} className="opacity-75" />
+                </a>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Developer Final Audit Report Modal */}
+      {isAuditReportOpen && (
+        <DeveloperAuditReportModal
+          onClose={() => {
+            setIsAuditReportOpen(false);
+            playSound("modal_close");
+          }}
+        />
+      )}
     </div>
   );
 };

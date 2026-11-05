@@ -20,6 +20,8 @@ export interface QuestionItem {
   explanation: string;
   stepByStepSolution?: string[];
   conceptTested: string;
+  textbookPageRef?: string;
+  auditStatus?: "reviewed_verified" | "corrected";
 }
 
 export interface SymbolLegend {
@@ -113,6 +115,14 @@ export interface ThinkingChallengeItem {
   deepSolutionGuide: string;
 }
 
+export interface LessonAuditMetadata {
+  auditStatus: "reviewed_verified" | "corrected" | "requires_review";
+  pageRange: string;
+  textbookSource: string;
+  lastAuditedDate: string;
+  auditorNotes: string;
+}
+
 export interface DetailedBacLesson {
   id: string;
   lessonNumber: number;
@@ -124,6 +134,9 @@ export interface DetailedBacLesson {
   estimatedMinutes: number;
   difficulty: "أساسي" | "متوسط" | "متقدم";
   simulationType?: BacSimType;
+
+  // توثيق المراجعة العلمية لصفحات كتاب الوزارة
+  auditMetadata?: LessonAuditMetadata;
 
   // 1. عنوان ومقدمة
   // 2. سؤال توجيهي يثير تفكير الطالب

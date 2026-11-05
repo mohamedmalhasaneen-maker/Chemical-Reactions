@@ -30,6 +30,7 @@ import {
   RotateCcw,
   Search,
   Sparkles,
+  ShieldCheck,
   Timer,
   Trash2,
   X,
@@ -49,6 +50,9 @@ import { playSound } from "../utils/soundEngine";
 import { DetailedLessonReader } from "./baccalaureate/DetailedLessonReader";
 import { InteractiveQuizSuite } from "./baccalaureate/InteractiveQuizSuite";
 import { OfficialTextbookModal } from "./baccalaureate/OfficialTextbookModal";
+import { DeveloperAuditReportModal } from "./baccalaureate/DeveloperAuditReportModal";
+import { PartSelectionView } from "./baccalaureate/PartSelectionView";
+import { LessonListView } from "./baccalaureate/LessonListView";
 import { getDetailedLessonSync } from "../curriculum/curriculumRegistry";
 import {
   DetailedBacLesson,
@@ -77,6 +81,7 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
   onAddXp,
 }) => {
   // 1. Navigation state
+  const [view, setView] = useState<'selection' | 'list' | 'reader'>('selection');
   const [selectedPartNum, setSelectedPartNum] = useState<1 | 2>(1);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,6 +94,7 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
   const [isHighlightsModalOpen, setIsHighlightsModalOpen] = useState(false);
   const [isRetestingWrongOnly, setIsRetestingWrongOnly] = useState(false);
   const [isOfficialTextbookModalOpen, setIsOfficialTextbookModalOpen] = useState(false);
+  const [isAuditReportOpen, setIsAuditReportOpen] = useState(false);
 
   // 3. Persistent Analytics & Notes State
   const [savedHighlights, setSavedHighlights] = useState<SavedHighlight[]>(() => {
@@ -284,194 +290,46 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 selection:bg-cyan-500 selection:text-black">
-      {/* 1. Header Hero Banner */}
-      <section className="relative overflow-hidden border-b border-slate-800 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 px-4 py-8 sm:px-6 lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(14,165,233,0.15),rgba(255,255,255,0))]" />
-
-        <div className="relative mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-300">
-                <GraduationCap size={15} />
-                <span>منهج البكالوريا المصرية 2026/2027</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                <span className="text-slate-400">شرح غير مختصر + بنك أسئلة متدرج</span>
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white mt-3">
-                منصة كيمياء البكالوريا التفاعلية المتكاملة
-              </h1>
-              <p className="mt-2 text-sm sm:text-base text-slate-400 max-w-3xl leading-relaxed">
-                وحدات تعليمية مستقلة وشاملة بـ 17 قسماً تعليمياً معتمدة 100% من كتاب الوزارة الرسمي. تجارب معملية، بنك أسئلة متدرج عبر 4 مستويات، ونظام اختبارات ذكي مع تشخيص نقاط الضعف.
-              </p>
-            </div>
-
-            {/* Quick Actions & Metric Badges */}
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsWrongQuestionsModalOpen(true);
-                  playSound("modal_open");
-                }}
-                className="relative flex items-center gap-2.5 rounded-2xl border border-rose-500/30 bg-rose-950/20 px-4 py-3 hover:bg-rose-900/30 transition shadow-sm"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/20 text-rose-400">
-                  <XCircle size={18} />
-                </div>
-                <div className="text-start">
-                  <span className="text-[11px] text-slate-400 block font-semibold">سجل الأخطاء الذكي</span>
-                  <span className="text-xs font-bold text-rose-300">
-                    {wrongQuestionsBank.length} سؤال للمراجعة
-                  </span>
-                </div>
-                {wrongQuestionsBank.length > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-mono font-bold text-white shadow-md">
-                    {wrongQuestionsBank.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsHighlightsModalOpen(true);
-                  playSound("modal_open");
-                }}
-                className="flex items-center gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 hover:bg-amber-900/30 transition shadow-sm"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
-                  <Bookmark size={18} />
-                </div>
-                <div className="text-start">
-                  <span className="text-[11px] text-slate-400 block font-semibold">الملاحظات المحفوظة</span>
-                  <span className="text-xs font-bold text-amber-300">
-                    {savedHighlights.length} تمييز علمي
-                  </span>
-                </div>
-              </button>
-
-              <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-3 shadow-sm">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  <Award size={22} />
-                </div>
-                <div>
-                  <span className="text-xs text-slate-400 block font-semibold">إجمالي الإنجاز في المنهج</span>
-                  <span className="text-sm font-bold text-white block mt-0.5">
-                    {completedCount} من 52 درساً ({overallPercent}%)
-                  </span>
-                  <div className="mt-1.5 h-1.5 w-32 rounded-full bg-slate-800 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-700"
-                      style={{ width: `${overallPercent}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. Part 1 vs Part 2 Switcher Tabs & Official Ministry Textbook Card */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedPartNum(1);
-                setSelectedChapterId("all");
-                playSound("select");
-              }}
-              className={`rounded-2xl p-4 text-start transition-all border ${
-                selectedPartNum === 1
-                  ? "bg-blue-600/15 border-blue-500/50 shadow-md ring-1 ring-blue-500/40"
-                  : "bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/60 text-slate-400"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                    selectedPartNum === 1
-                      ? "bg-blue-500/20 text-blue-300"
-                      : "bg-slate-800 text-slate-400"
-                  }`}
-                >
-                  الجزء الأول
-                </span>
-                <span className="text-xs font-mono font-bold text-blue-400">
-                  {part1CompletedCount} / 26 مكتمل
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-white mt-2">
-                كيمياء البكالوريا Part 1
-              </h3>
-              <p className="text-xs text-slate-400 mt-1 line-clamp-1">
-                الفصل الأول: حالات المادة (13) + الفصل الثاني: التغير والاتزان (13)
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedPartNum(2);
-                setSelectedChapterId("all");
-                playSound("select");
-              }}
-              className={`rounded-2xl p-4 text-start transition-all border ${
-                selectedPartNum === 2
-                  ? "bg-cyan-600/15 border-cyan-500/50 shadow-md ring-1 ring-cyan-500/40"
-                  : "bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/60 text-slate-400"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                    selectedPartNum === 2
-                      ? "bg-cyan-500/20 text-cyan-300"
-                      : "bg-slate-800 text-slate-400"
-                  }`}
-                >
-                  الجزء الثاني
-                </span>
-                <span className="text-xs font-mono font-bold text-cyan-400">
-                  {part2CompletedCount} / 26 مكتمل
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-white mt-2">
-                كيمياء البكالوريا Part 2
-              </h3>
-              <p className="text-xs text-slate-400 mt-1 line-clamp-1">
-                الفصل الثالث: المواد غير العضوية (11) + الفصل الرابع: الكيمياء العضوية (15)
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsOfficialTextbookModalOpen(true);
-                playSound("modal_open");
-              }}
-              className="group rounded-2xl p-4 text-start transition-all border border-emerald-500/40 bg-gradient-to-br from-emerald-950/30 via-slate-900/60 to-slate-900/90 hover:border-emerald-400 shadow-md hover:shadow-emerald-500/10"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
-                  كتاب الوزارة الرسمي
-                </span>
-                <BookOpen size={16} className="text-emerald-400 group-hover:scale-110 transition-transform" />
-              </div>
-              <h3 className="text-base font-bold text-white mt-2">
-                📚 الكتاب الأصلي للوزارة
-              </h3>
-              <p className="text-xs text-slate-400 mt-1 line-clamp-1">
-                عرض، بحث وتحميل الكتاب المدرسي الرسمي لوزارة التربية والتعليم
-              </p>
-            </button>
+      {/* Simplified Breadcrumb/Header */}
+      <section className="relative overflow-hidden border-b border-slate-800 bg-slate-950 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="relative mx-auto max-w-7xl flex items-center justify-between">
+          <h1 className="text-xl font-extrabold text-white">منصة كيمياء البكالوريا</h1>
+          <div className="text-xs text-slate-400 font-mono">
+            {view === 'selection' && "الرئيسية ← اختيار الجزء"}
+            {view === 'list' && `الرئيسية ← اختيار الجزء ← الجزء ${selectedPartNum === 1 ? 'الأول' : 'الثاني'}`}
+            {view === 'reader' && "الرئيسية ← ... ← الدرس"}
           </div>
         </div>
       </section>
 
       {/* Main Container */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {activeLesson && detailedActiveLesson ? (
-          /* 3. Detailed Unabridged 17-Section Reader View */
+        {view === 'selection' && (
+          <PartSelectionView
+            onSelectPart={(part) => { setSelectedPartNum(part); setView('list'); }}
+            onOpenTextbook={() => setIsOfficialTextbookModalOpen(true)}
+            part1CompletedCount={part1CompletedCount}
+            part2CompletedCount={part2CompletedCount}
+          />
+        )}
+
+        {view === 'list' && (
+          <LessonListView
+            partNum={selectedPartNum}
+            progressState={progressState}
+            onSelectLesson={(lesson) => { setActiveLessonId(lesson.id); setView('reader'); }}
+            onBack={() => setView('selection')}
+            filteredChapters={filteredChapters}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedDifficulty={selectedDifficulty}
+            setSelectedDifficulty={setSelectedDifficulty}
+            selectedChapterId={selectedChapterId}
+            setSelectedChapterId={setSelectedChapterId}
+          />
+        )}
+
+        {view === 'reader' && activeLesson && detailedActiveLesson && (
           <div>
             <DetailedLessonReader
               lesson={detailedActiveLesson}
@@ -479,92 +337,18 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
               onToggleComplete={() => {
                 const current = Boolean(progressState[activeLesson.id]?.completed);
                 onUpdateProgress(activeLesson.id, !current);
-                if (!current) {
-                  onAddXp(50);
-                  playSound("achievement");
-                } else {
-                  playSound("click");
-                }
+                if (!current) { onAddXp(50); playSound("achievement"); } else { playSound("click"); }
               }}
-              onOpenQuizSuite={() => {
-                setIsQuizSuiteOpen(true);
-                playSound("modal_open");
-              }}
-              onBack={handleBackToCatalog}
+              onOpenQuizSuite={() => { setIsQuizSuiteOpen(true); playSound("modal_open"); }}
+              onBack={() => setView('list')}
               prevLessonTitle={prevLesson?.title}
               nextLessonTitle={nextLesson?.title}
-              onNavigatePrev={prevLesson ? () => handleSelectLesson(prevLesson) : undefined}
-              onNavigateNext={nextLesson ? () => handleSelectLesson(nextLesson) : undefined}
+              onNavigatePrev={prevLesson ? () => { setActiveLessonId(prevLesson.id); } : undefined}
+              onNavigateNext={nextLesson ? () => { setActiveLessonId(nextLesson.id); } : undefined}
               savedHighlights={savedHighlights.filter((h) => h.lessonId === activeLesson.id)}
               onAddHighlight={handleAddHighlight}
               onRemoveHighlight={handleRemoveHighlight}
             />
-          </div>
-        ) : (
-          /* 4. Curriculum Chapters & Lessons Catalog View */
-          <div className="space-y-6">
-            {/* Filter and Search Bar */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col md:flex-row items-center gap-4">
-              <div className="relative flex-1 w-full">
-                <Search
-                  size={18}
-                  className="absolute start-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                  type="text"
-                  placeholder="ابحث في الدروس، المفاهيم، المعادلات، أو أسماء العلماء..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-xl bg-slate-950 border border-slate-800 py-2.5 ps-10 pe-4 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                {/* Chapter Select */}
-                <select
-                  value={selectedChapterId}
-                  onChange={(e) => {
-                    setSelectedChapterId(e.target.value);
-                    playSound("select");
-                  }}
-                  className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5 text-xs text-slate-300 focus:border-cyan-500 focus:outline-none"
-                >
-                  <option value="all">جميع فصول الجزء {selectedPartNum}</option>
-                  {currentPart.chapters.map((ch) => (
-                    <option key={ch.id} value={ch.id}>
-                      {ch.title}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Difficulty Select */}
-                <select
-                  value={selectedDifficulty}
-                  onChange={(e) => {
-                    setSelectedDifficulty(e.target.value);
-                    playSound("select");
-                  }}
-                  className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5 text-xs text-slate-300 focus:border-cyan-500 focus:outline-none"
-                >
-                  <option value="all">كل مستويات الصعوبة</option>
-                  <option value="أساسي">أساسي</option>
-                  <option value="متوسط">متوسط</option>
-                  <option value="متقدم">متقدم</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Chapters with Lesson Cards */}
-            <div className="space-y-8">
-              {filteredChapters.map((chapter) => (
-                <ChapterCardSection
-                  key={chapter.id}
-                  chapter={chapter}
-                  progressState={progressState}
-                  onSelectLesson={handleSelectLesson}
-                />
-              ))}
-            </div>
           </div>
         )}
       </main>
@@ -574,6 +358,16 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
         <OfficialTextbookModal
           onClose={() => {
             setIsOfficialTextbookModalOpen(false);
+            playSound("modal_close");
+          }}
+        />
+      )}
+
+      {/* Audit Report Modal */}
+      {isAuditReportOpen && (
+        <DeveloperAuditReportModal
+          onClose={() => {
+            setIsAuditReportOpen(false);
             playSound("modal_close");
           }}
         />

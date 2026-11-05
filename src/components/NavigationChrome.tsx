@@ -3,7 +3,9 @@ import {
   Atom,
   BookOpenCheck,
   ChevronLeft,
+  ExternalLink,
   FlaskConical,
+  Globe,
   GraduationCap,
   Home,
   Menu,
@@ -241,6 +243,19 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
               </button>
             </div>
 
+            {/* Developer Website Link */}
+            <a
+              href="https://mohamed-mahmoud-official.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="🌐 موقع المطور | Mohamed Mahmoud"
+              className="group inline-flex h-9 items-center gap-1.5 rounded-xl border border-cyan-500/40 dark:border-cyan-400/40 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 dark:from-cyan-400/15 dark:to-blue-500/15 px-2.5 text-[11px] font-bold text-cyan-700 dark:text-cyan-300 hover:border-cyan-500 dark:hover:border-cyan-400 hover:bg-cyan-500/20 dark:hover:bg-cyan-400/25 transition-all active:scale-95 shadow-xs shrink-0"
+            >
+              <Globe size={14} className="text-cyan-600 dark:text-cyan-400 group-hover:rotate-12 transition-transform" />
+              <span>موقع المطور</span>
+              <ExternalLink size={11} className="opacity-70" />
+            </a>
+
             {/* Theme Toggle Button */}
             <button
               type="button"
@@ -308,6 +323,18 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
             >
               {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
             </button>
+
+            {/* Developer Website Button */}
+            <a
+              href="https://mohamed-mahmoud-official.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="موقع المطور | Mohamed Mahmoud"
+              title="🌐 موقع المطور | Mohamed Mahmoud"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 active:scale-90 transition"
+            >
+              <Globe size={15} />
+            </a>
 
             {/* Theme button */}
             <button
@@ -404,6 +431,34 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
               <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">
                 أقسام المنصة
               </div>
+
+              {/* Developer Website Link in Drawer */}
+              <a
+                href="https://mohamed-mahmoud-official.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setDrawerOpen(false)}
+                className="group flex w-full items-center justify-between gap-3 rounded-2xl p-2.5 text-start transition active:scale-[0.98] bg-gradient-to-r from-cyan-600/15 via-blue-600/10 to-transparent border border-cyan-500/40 dark:border-cyan-400/40 hover:border-cyan-400 shadow-xs mb-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <GlassIcon
+                    icon={<Globe size={18} strokeWidth={2.2} />}
+                    tone="cyan"
+                    shape="module"
+                    interactive={false}
+                  />
+                  <div className="min-w-0">
+                    <span className="text-xs sm:text-sm font-extrabold text-cyan-700 dark:text-cyan-300 block truncate">
+                      🌐 موقع المطور | Mohamed Mahmoud
+                    </span>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                      زيارة الموقع الشخصي الرسمي للمطور
+                    </p>
+                  </div>
+                </div>
+                <ExternalLink size={15} className="text-cyan-600 dark:text-cyan-400 shrink-0 group-hover:translate-x-[-2px] transition-transform" />
+              </a>
+
               {NAV_ITEMS.map((item) => {
                 const isActive = activePage === item.id;
                 return (

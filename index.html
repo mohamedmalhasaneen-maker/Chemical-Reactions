@@ -1,18 +1,31 @@
 <!doctype html>
-<html lang="en" class="h-full">
+<html lang="ar" dir="rtl" class="h-full dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>التفاعلات الكيميائيه المعدل - مختبر كيمياء افتراضي تفاعلي</title>
-    <meta name="description" content="مختبر كيمياء افتراضي تفاعلي مجهز بمحاكاة تصادم الجزيئات وتحولها لمركبات ناتجة بصرياً ثنائية الأبعاد بدقة فائقة." />
-    <!-- Modern Typography Font pairing with Arabic Support -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>التفاعلات الكيميائية | المختبر الكيميائي الافتراضي التفاعلي</title>
+    <meta name="description" content="منصة علمية وتعليمية متكاملة لمحاكاة التفاعلات الكيميائية، تصادم الجزيئات، الجدول الدوري التفاعلي، وأجهزة التحليل الجامعي." />
+    <meta property="og:title" content="التفاعلات الكيميائية | المختبر الكيميائي الافتراضي التفاعلي" />
+    <meta property="og:description" content="منصة علمية وتعليمية متكاملة لمحاكاة التفاعلات الكيميائية، تصادم الجزيئات، الجدول الدوري التفاعلي، وأجهزة التحليل الجامعي." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="manifest" href="/manifest.json" />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('chem_lab_theme');
+          if (saved === 'light') {
+            document.documentElement.classList.remove('dark');
+          } else {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="h-full bg-[#070709] text-slate-100 overflow-x-hidden font-sans">
-    <div id="root" class="h-full"></div>
+  <body class="h-full bg-[#F4F7FB] text-slate-900 dark:bg-[#060B19] dark:text-slate-100 overflow-x-hidden font-sans antialiased transition-colors duration-200">
+    <div id="root" class="min-h-full flex flex-col"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

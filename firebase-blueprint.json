@@ -1,47 +1,97 @@
 {
   "entities": {
+    "LabProfile": {
+      "title": "LabProfile",
+      "description": "Authenticated student laboratory profile, XP progress, badges, and completed lessons",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the student"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Student public display name"
+        },
+        "scorePoints": {
+          "type": "integer",
+          "description": "Total earned academic XP points"
+        },
+        "completedLessons": {
+          "type": "array",
+          "description": "Bounded list of completed lesson IDs (max 50)"
+        },
+        "unlockedBadges": {
+          "type": "array",
+          "description": "Bounded list of unlocked badge IDs (max 50)"
+        },
+        "experimentsRun": {
+          "type": "integer",
+          "description": "Total number of simulated chemical reactions"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "ownerId",
+        "displayName",
+        "scorePoints",
+        "completedLessons",
+        "unlockedBadges",
+        "experimentsRun",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
     "Comment": {
       "title": "Comment",
-      "description": "Product review or customer comment submitted by visitors",
+      "description": "Visitor comment record",
       "type": "object",
       "properties": {
         "name": {
           "type": "string",
           "minLength": 2,
-          "maxLength": 50,
-          "description": "Visitor name or alias"
+          "maxLength": 50
         },
         "comment": {
           "type": "string",
           "minLength": 2,
-          "maxLength": 500,
-          "description": "Comment text content"
+          "maxLength": 500
         },
         "rating": {
-          "type": "integer",
-          "description": "Star rating from 1 to 5"
+          "type": "integer"
         },
         "productId": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 100,
-          "description": "Target product ID"
+          "maxLength": 100
         },
         "status": {
           "type": "string",
-          "enum": ["pending", "approved", "rejected"],
-          "description": "Approval status of the comment"
+          "enum": ["pending", "approved", "rejected"]
         },
         "createdAt": {
-          "type": "string",
-          "description": "Submission timestamp"
+          "type": "string"
         }
       },
       "required": ["name", "comment", "rating", "productId", "status", "createdAt"]
     },
     "Product": {
       "title": "Product",
-      "description": "Store item catalog product",
+      "description": "Catalog item",
       "type": "object",
       "properties": {
         "name": {
@@ -50,16 +100,19 @@
           "maxLength": 100
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 1000
         },
         "price": {
           "type": "number"
         },
         "category": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 60
         },
         "imageUrl": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 500
         },
         "stock": {
           "type": "integer"
@@ -69,17 +122,13 @@
     },
     "Order": {
       "title": "Order",
-      "description": "Customer purchase order",
+      "description": "Legacy order record",
       "type": "object",
       "properties": {
-        "customerName": {
-          "type": "string"
-        },
-        "customerPhone": {
-          "type": "string"
-        },
-        "customerAddress": {
-          "type": "string"
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
         },
         "totalAmount": {
           "type": "number"
@@ -92,7 +141,7 @@
           "type": "string"
         }
       },
-      "required": ["customerName", "customerPhone", "customerAddress", "totalAmount", "status"]
+      "required": ["ownerId", "totalAmount", "status", "createdAt"]
     },
     "Admin": {
       "title": "Admin",
@@ -100,7 +149,8 @@
       "type": "object",
       "properties": {
         "email": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 120
         },
         "role": {
           "type": "string",
@@ -111,21 +161,25 @@
     }
   },
   "firestore": {
+    "/lab_profiles/{userId}": {
+      "schema": { "$ref": "#/entities/LabProfile" },
+      "description": "Authenticated student chemistry lab progression and achievement records"
+    },
     "/comments/{commentId}": {
       "schema": { "$ref": "#/entities/Comment" },
-      "description": "Collection of visitor comments and product ratings"
+      "description": "Legacy visitor comments collection"
     },
     "/products/{productId}": {
       "schema": { "$ref": "#/entities/Product" },
-      "description": "E-commerce products catalog"
+      "description": "Legacy products collection"
     },
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
-      "description": "Customer orders"
+      "description": "Legacy orders collection"
     },
     "/admins/{userId}": {
       "schema": { "$ref": "#/entities/Admin" },
-      "description": "Authorized developers and store administrators"
+      "description": "Authorized platform administrators"
     }
   }
 }

@@ -1,6 +1,6 @@
 {
-  "name": "متجر المحلاوي - Al Mahlawy Store",
-  "description": "متجر رسمي لإلكترونيات والملابس والأحذية مع نظام تعليقات وتقييمات تفاعلي آمن ومحمي بقواعد Firestore Security Rules.",
+  "name": "المختبر الكيميائي الافتراضي التفاعلي",
+  "description": "منصة علمية وتعليمية متكاملة لمحاكاة التفاعلات الكيميائية، تصادم الجزيئات، الجدول الدوري التفاعلي، وأجهزة التحليل الجامعي.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

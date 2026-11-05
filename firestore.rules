@@ -2,26 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global Catch-All Security Gate
+    // Pillar 1: Global Default-Deny Safety Net
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // --- Helper Functions ---
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Developer / Admin verification (by email or admin collection record)
-    function isDeveloper() {
-      return isSignedIn() && (
-        request.auth.token.email == 'mohamed.m.alhasaneen@gmail.com' ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
-    }
-
+    // --- Hardened Primitives ---
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
     function incoming() {
@@ -32,51 +20,192 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // --- Comment Validation Helper ---
-    function isValidNewComment(data) {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'mohamed.m.alhasaneen@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidBoundedStringArray(arr, maxItems, maxItemLen) {
+      return arr is list &&
+        arr.size() <= maxItems &&
+        (arr.size() == 0 || (arr[0] is string && arr[0].size() >= 1 && arr[0].size() <= maxItemLen));
+    }
+
+    // --- Validation Blueprint: LabProfile ---
+    function isValidLabProfile(data) {
+      return data.keys().hasAll([
+          'ownerId',
+          'displayName',
+          'scorePoints',
+          'completedLessons',
+          'unlockedBadges',
+          'experimentsRun',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId',
+          'displayName',
+          'scorePoints',
+          'completedLessons',
+          'unlockedBadges',
+          'experimentsRun',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.ownerId == request.auth.uid &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+        data.scorePoints is int && data.scorePoints >= 0 && data.scorePoints <= 1000000 &&
+        data.experimentsRun is int && data.experimentsRun >= 0 && data.experimentsRun <= 100000 &&
+        isValidBoundedStringArray(data.completedLessons, 50, 64) &&
+        isValidBoundedStringArray(data.unlockedBadges, 50, 64) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // --- Student Chemistry Lab Profiles ---
+    match /lab_profiles/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidLabProfile(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidLabProfile(incoming()) &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName',
+          'scorePoints',
+          'completedLessons',
+          'unlockedBadges',
+          'experimentsRun',
+          'updatedAt'
+        ]);
+
+      allow delete: if isSignedIn() && isValidId(userId) && (isOwner(userId) || isAdmin());
+    }
+
+    // --- Preserved Collections (Hardened, Zero get/exists in list) ---
+    function isValidComment(data) {
       return data.keys().hasAll(['name', 'comment', 'rating', 'productId', 'status', 'createdAt']) &&
         data.keys().hasOnly(['name', 'comment', 'rating', 'productId', 'status', 'createdAt']) &&
         data.name is string && data.name.size() >= 2 && data.name.size() <= 50 &&
         data.comment is string && data.comment.size() >= 2 && data.comment.size() <= 500 &&
         data.rating is int && data.rating >= 1 && data.rating <= 5 &&
         data.productId is string && data.productId.size() >= 1 && data.productId.size() <= 100 &&
-        data.status == 'pending' &&
-        (data.createdAt is timestamp || (data.createdAt is string && data.createdAt.size() <= 100));
+        data.status in ['pending', 'approved', 'rejected'] &&
+        data.createdAt is timestamp;
     }
 
-    // --- Comments Collection Rules ---
     match /comments/{commentId} {
-      // 1. Visitors (registered or unregistered) can ONLY create comments with status 'pending' and valid fields
-      allow create: if isValidId(commentId) && isValidNewComment(incoming());
-
-      // 2. Visitors can ONLY read approved comments. Developer can read all comments (pending, approved, rejected)
-      allow get, list: if resource.data.status == 'approved' || isDeveloper();
-
-      // 3. Visitors CANNOT update or delete comments. Only authorized developer can update approval status or delete
-      allow update, delete: if isDeveloper();
+      allow get: if isValidId(commentId) && (existing().status == 'approved' || isAdmin());
+      allow list: if existing().status == 'approved';
+      allow create: if isVerifiedUser() &&
+        isValidId(commentId) &&
+        isValidComment(incoming()) &&
+        incoming().status == 'pending' &&
+        incoming().createdAt == request.time;
+      allow update: if isValidComment(incoming()) &&
+        isSignedIn() &&
+        isValidId(commentId) &&
+        isAdmin() &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+      allow delete: if isSignedIn() && isValidId(commentId) && isAdmin();
     }
 
-    // --- Products Collection Rules ---
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'price', 'category']) &&
+        data.keys().hasOnly(['name', 'description', 'price', 'category', 'imageUrl', 'stock']) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+        data.price is number && data.price >= 0 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+        (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 500)) &&
+        (!('stock' in data) || (data.stock is int && data.stock >= 0));
+    }
+
     match /products/{productId} {
-      allow read: if true;
-      allow write: if isDeveloper();
+      allow get: if isSignedIn() && isValidId(productId) && isAdmin();
+      allow list: if false;
+      allow create: if isSignedIn() && isValidId(productId) && isValidProduct(incoming()) && isAdmin();
+      allow update: if isValidProduct(incoming()) &&
+        isSignedIn() &&
+        isValidId(productId) &&
+        isAdmin() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'price', 'category', 'imageUrl', 'stock']);
+      allow delete: if isSignedIn() && isValidId(productId) && isAdmin();
     }
 
-    // --- Orders Collection Rules ---
+    function isValidOrder(data) {
+      return data.keys().hasAll(['ownerId', 'totalAmount', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['ownerId', 'totalAmount', 'status', 'createdAt']) &&
+        data.ownerId == request.auth.uid &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.totalAmount is number && data.totalAmount >= 0 &&
+        data.status in ['pending', 'completed', 'cancelled'] &&
+        data.createdAt is timestamp;
+    }
+
     match /orders/{orderId} {
-      allow create: if true;
-      allow read, update, delete: if isDeveloper();
+      allow get: if isSignedIn() && isValidId(orderId) && ((isVerifiedUser() && existing().ownerId == request.auth.uid) || isAdmin());
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        incoming().status == 'pending' &&
+        incoming().createdAt == request.time;
+      allow update: if isValidOrder(incoming()) &&
+        isSignedIn() &&
+        isValidId(orderId) &&
+        existing().status == 'pending' &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        isAdmin() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+      allow delete: if isSignedIn() && isValidId(orderId) && isAdmin();
     }
 
-    // --- Admins Collection Rules ---
+    function isValidAdminDoc(data) {
+      return data.keys().hasAll(['email', 'role']) &&
+        data.keys().hasOnly(['email', 'role']) &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 120 &&
+        data.role in ['developer', 'admin'];
+    }
+
     match /admins/{userId} {
-      allow read, write: if isDeveloper();
-    }
-
-    // --- Store Settings Collection Rules ---
-    match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isDeveloper();
+      allow get: if isSignedIn() && isValidId(userId) && isAdmin();
+      allow list: if false;
+      allow create: if isSignedIn() && isValidId(userId) && isValidAdminDoc(incoming()) && isAdmin();
+      allow update: if isValidAdminDoc(incoming()) &&
+        isSignedIn() &&
+        isValidId(userId) &&
+        isAdmin() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['role']);
+      allow delete: if isSignedIn() && isValidId(userId) && isAdmin();
     }
   }
 }

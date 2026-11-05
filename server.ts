@@ -255,11 +255,11 @@ async function generateGeminiContentWithFallback(
   schema: any,
   reactantsSelected: any[]
 ): Promise<any> {
-  const models = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+  const models = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
   let lastError: any = null;
 
   for (const model of models) {
-    const maxAttempts = model === "gemini-3.5-flash" ? 2 : 1;
+    const maxAttempts = model === "gemini-3.8-flash" ? 2 : 1;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         console.log(`[Gemini API] Trying model "${model}" - Attempt ${attempt}/${maxAttempts}`);

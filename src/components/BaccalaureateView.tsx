@@ -48,6 +48,7 @@ import { BACCALAUREATE_PART_2 } from "../data/baccalaureatePart2";
 import { playSound } from "../utils/soundEngine";
 import { DetailedLessonReader } from "./baccalaureate/DetailedLessonReader";
 import { InteractiveQuizSuite } from "./baccalaureate/InteractiveQuizSuite";
+import { OfficialTextbookModal } from "./baccalaureate/OfficialTextbookModal";
 import { getDetailedLessonSync } from "../curriculum/curriculumRegistry";
 import {
   DetailedBacLesson,
@@ -87,6 +88,7 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
   const [isWrongQuestionsModalOpen, setIsWrongQuestionsModalOpen] = useState(false);
   const [isHighlightsModalOpen, setIsHighlightsModalOpen] = useState(false);
   const [isRetestingWrongOnly, setIsRetestingWrongOnly] = useState(false);
+  const [isOfficialTextbookModalOpen, setIsOfficialTextbookModalOpen] = useState(false);
 
   // 3. Persistent Analytics & Notes State
   const [savedHighlights, setSavedHighlights] = useState<SavedHighlight[]>(() => {
@@ -369,8 +371,8 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
             </div>
           </div>
 
-          {/* 2. Part 1 vs Part 2 Switcher Tabs */}
-          <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* 2. Part 1 vs Part 2 Switcher Tabs & Official Ministry Textbook Card */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
             <button
               type="button"
               onClick={() => {
@@ -378,7 +380,7 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
                 setSelectedChapterId("all");
                 playSound("select");
               }}
-              className={`flex-1 rounded-2xl p-4 text-start transition-all border ${
+              className={`rounded-2xl p-4 text-start transition-all border ${
                 selectedPartNum === 1
                   ? "bg-blue-600/15 border-blue-500/50 shadow-md ring-1 ring-blue-500/40"
                   : "bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/60 text-slate-400"
@@ -413,7 +415,7 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
                 setSelectedChapterId("all");
                 playSound("select");
               }}
-              className={`flex-1 rounded-2xl p-4 text-start transition-all border ${
+              className={`rounded-2xl p-4 text-start transition-all border ${
                 selectedPartNum === 2
                   ? "bg-cyan-600/15 border-cyan-500/50 shadow-md ring-1 ring-cyan-500/40"
                   : "bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/60 text-slate-400"
@@ -438,6 +440,28 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
               </h3>
               <p className="text-xs text-slate-400 mt-1 line-clamp-1">
                 الفصل الثالث: المواد غير العضوية (11) + الفصل الرابع: الكيمياء العضوية (15)
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsOfficialTextbookModalOpen(true);
+                playSound("modal_open");
+              }}
+              className="group rounded-2xl p-4 text-start transition-all border border-emerald-500/40 bg-gradient-to-br from-emerald-950/30 via-slate-900/60 to-slate-900/90 hover:border-emerald-400 shadow-md hover:shadow-emerald-500/10"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
+                  كتاب الوزارة الرسمي
+                </span>
+                <BookOpen size={16} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+              </div>
+              <h3 className="text-base font-bold text-white mt-2">
+                📚 الكتاب الأصلي للوزارة
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 line-clamp-1">
+                عرض، بحث وتحميل الكتاب المدرسي الرسمي لوزارة التربية والتعليم
               </p>
             </button>
           </div>
@@ -545,7 +569,17 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
         )}
       </main>
 
-      {/* 5. Interactive Quiz Suite Modal */}
+      {/* 5. Official Ministry Textbook Modal */}
+      {isOfficialTextbookModalOpen && (
+        <OfficialTextbookModal
+          onClose={() => {
+            setIsOfficialTextbookModalOpen(false);
+            playSound("modal_close");
+          }}
+        />
+      )}
+
+      {/* 6. Interactive Quiz Suite Modal */}
       {isQuizSuiteOpen && detailedActiveLesson && (
         <InteractiveQuizSuite
           lessonTitle={detailedActiveLesson.title}

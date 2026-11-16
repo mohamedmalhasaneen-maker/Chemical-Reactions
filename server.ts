@@ -470,11 +470,29 @@ Consider factors like temperature spikes, color shifts, precipitate formation, g
 
   // Handle Vite Asset and SPA serving
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    let viteMiddleware: express.RequestHandler | null = null;
+    const viteReadyPromise = createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
+    })
+      .then((vite) => {
+        viteMiddleware = vite.middlewares;
+        console.log("[Virtual Lab Server] Vite middleware ready.");
+        return vite.middlewares;
+      })
+      .catch((err) => {
+        console.error("[Virtual Lab Server] Failed to initialize Vite middleware:", err);
+        throw err;
+      });
+
+    app.use(async (req, res, next) => {
+      try {
+        const mw = viteMiddleware || (await viteReadyPromise);
+        return mw(req, res, next);
+      } catch (err) {
+        next(err);
+      }
     });
-    app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));

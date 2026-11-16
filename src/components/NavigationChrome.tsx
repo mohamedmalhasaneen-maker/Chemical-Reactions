@@ -7,6 +7,7 @@ import {
   FlaskConical,
   Globe,
   GraduationCap,
+  HardDrive,
   Home,
   Menu,
   Microscope,
@@ -19,6 +20,8 @@ import {
 } from "lucide-react";
 import { AppPage } from "../types";
 import { GlassIcon, GlassTone } from "./GlassIcon";
+import { PWAInstallButton } from "./PWAInstallButton";
+import { ConnectivityStatusIndicator } from "./ConnectivityStatusIndicator";
 
 interface NavigationChromeProps {
   activePage: AppPage;
@@ -30,6 +33,13 @@ interface NavigationChromeProps {
   onOpenSoundSettings: () => void;
   beakerCount: number;
   scorePoints: number;
+  isOnline: boolean;
+  isSyncingCloud: boolean;
+  hasPendingSync: boolean;
+  needRefresh: boolean;
+  onApplyUpdate: () => void;
+  onOpenOfflineManager: () => void;
+  onNotify?: (msg: string) => void;
 }
 
 const NAV_ITEMS: {
@@ -107,6 +117,13 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
   onOpenSoundSettings,
   beakerCount,
   scorePoints,
+  isOnline,
+  isSyncingCloud,
+  hasPendingSync,
+  needRefresh,
+  onApplyUpdate,
+  onOpenOfflineManager,
+  onNotify,
 }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -206,8 +223,29 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
             })}
           </nav>
 
-          {/* Zone 3: Compact Utility Controls (XP + Sound + Theme) */}
-          <div className="flex items-center gap-1.5 lg:gap-2 whitespace-nowrap shrink-0">
+          {/* Zone 3: Compact Utility Controls (Status + Offline + Install + XP + Sound + Theme) */}
+          <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+            <ConnectivityStatusIndicator
+              isOnline={isOnline}
+              isSyncing={isSyncingCloud}
+              hasPendingSync={hasPendingSync}
+              needRefresh={needRefresh}
+              onApplyUpdate={onApplyUpdate}
+              compact
+            />
+
+            <PWAInstallButton variant="header" onInstalledToast={onNotify} />
+
+            <button
+              type="button"
+              onClick={onOpenOfflineManager}
+              title="إدارة المحتوى دون إنترنت (تنزيل الدروس والكتب الصوتية والـ PDF)"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-300/70 dark:border-slate-700/70 bg-white/75 dark:bg-slate-900/65 px-2.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:border-cyan-500/50 transition-all active:scale-95 shadow-xs shrink-0"
+            >
+              <HardDrive size={14} className="text-cyan-600 dark:text-cyan-400" />
+              <span className="hidden 2xl:inline">دون إنترنت</span>
+            </button>
+
             {/* Scientific XP Badge */}
             <div
               title="نقاط الخبرة العلمية المكتسبة"
@@ -249,10 +287,10 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               title="🌐 موقع المطور | Mohamed Mahmoud"
-              className="group inline-flex h-9 items-center gap-1.5 rounded-xl border border-cyan-500/40 dark:border-cyan-400/40 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 dark:from-cyan-400/15 dark:to-blue-500/15 px-2.5 text-[11px] font-bold text-cyan-700 dark:text-cyan-300 hover:border-cyan-500 dark:hover:border-cyan-400 hover:bg-cyan-500/20 dark:hover:bg-cyan-400/25 transition-all active:scale-95 shadow-xs shrink-0"
+              className="group inline-flex h-9 items-center gap-1.5 rounded-xl border border-cyan-500/40 dark:border-cyan-400/40 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 dark:from-cyan-400/15 dark:to-blue-500/15 px-2 text-[11px] font-bold text-cyan-700 dark:text-cyan-300 hover:border-cyan-500 dark:hover:border-cyan-400 hover:bg-cyan-500/20 dark:hover:bg-cyan-400/25 transition-all active:scale-95 shadow-xs shrink-0"
             >
               <Globe size={14} className="text-cyan-600 dark:text-cyan-400 group-hover:rotate-12 transition-transform" />
-              <span>موقع المطور</span>
+              <span className="hidden xl:inline">موقع المطور</span>
               <ExternalLink size={11} className="opacity-70" />
             </a>
 
@@ -307,8 +345,17 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
 
           {/* Quick Controls & Menu Trigger */}
           <div className="flex items-center gap-1 shrink-0">
+            <ConnectivityStatusIndicator
+              isOnline={isOnline}
+              isSyncing={isSyncingCloud}
+              hasPendingSync={hasPendingSync}
+              needRefresh={needRefresh}
+              onApplyUpdate={onApplyUpdate}
+              compact
+            />
+
             {/* XP readout */}
-            <span className="text-[10px] font-bold font-mono tabular-nums text-amber-700 dark:text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/25">
+            <span className="hidden sm:inline-block text-[10px] font-bold font-mono tabular-nums text-amber-700 dark:text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/25">
               {scorePoints} XP
             </span>
 
@@ -428,6 +475,30 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
 
             {/* Main Navigation Links List */}
             <div className="space-y-2 flex-1">
+              <div className="space-y-2 mb-3">
+                <PWAInstallButton variant="drawer" onInstalledToast={onNotify} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenOfflineManager();
+                    setDrawerOpen(false);
+                  }}
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl p-3 text-start transition active:scale-[0.98] border border-cyan-500/35 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-200"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <HardDrive size={18} className="text-cyan-400 shrink-0" />
+                    <div>
+                      <span className="text-xs sm:text-sm font-extrabold block">
+                        إدارة المحتوى دون إنترنت
+                      </span>
+                      <span className="text-[11px] opacity-80 block">
+                        تنزيل الدروس والصوتيات والكتب PDF
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
               <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">
                 أقسام المنصة
               </div>

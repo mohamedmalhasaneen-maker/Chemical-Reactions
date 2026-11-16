@@ -39,6 +39,7 @@ import {
 import { DetailedBacLesson } from "../../curriculum/types";
 import { BaccalaureateSimulationEmbed } from "../BaccalaureateSimulationEmbed";
 import { playSound } from "../../utils/soundEngine";
+import { LessonAudioPlayer } from "./LessonAudioPlayer";
 
 interface DetailedLessonReaderProps {
   lesson: DetailedBacLesson;
@@ -290,6 +291,9 @@ export const DetailedLessonReader: React.FC<DetailedLessonReaderProps> = ({
             <p className="text-sm text-slate-300 leading-relaxed font-semibold">
               {lesson.subtitle}
             </p>
+
+            {/* Offline Downloadable Audio Narration Player */}
+            <LessonAudioPlayer lesson={lesson} />
 
             {/* Section 2: Orientation Question */}
             <div className="rounded-2xl border border-amber-500/40 bg-amber-950/25 p-4 sm:p-5 flex items-start gap-3.5">

@@ -8,6 +8,7 @@ import {
   FlaskConical,
   Globe,
   GraduationCap,
+  HardDrive,
   Microscope,
   Play,
   ShieldCheck,
@@ -27,6 +28,7 @@ import { GlassIcon, GlassTone } from "./GlassIcon";
 import { ChemicalEquation } from "./ChemicalFormula";
 import { HeroMolecularCanvas } from "./HeroMolecularCanvas";
 import { DeveloperAuditReportModal } from "./baccalaureate/DeveloperAuditReportModal";
+import { PWAInstallButton } from "./PWAInstallButton";
 
 import { playSound } from "../utils/soundEngine";
 import heroReactorImg from "../assets/images/hero_molecular_reactor_1793813032279.jpg";
@@ -38,6 +40,8 @@ interface HomeViewProps {
   onNavigate: (page: AppPage) => void;
   onRunQuickExperiment: (preset: QuickExperimentPreset) => void;
   onStartLesson: (lessonId: string) => void;
+  onOpenOfflineManager: () => void;
+  onNotify?: (msg: string) => void;
 }
 
 const HERO_PREVIEW_KEYS: {
@@ -75,6 +79,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onNavigate,
   onRunQuickExperiment,
   onStartLesson,
+  onOpenOfflineManager,
+  onNotify,
 }) => {
   const [previewIdx, setPreviewIdx] = useState(0);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
@@ -157,6 +163,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
               >
                 <FlaskConical size={19} className="text-cyan-400" />
                 <span>المختبر التفاعلي</span>
+              </button>
+
+              <PWAInstallButton variant="hero" onInstalledToast={onNotify} />
+
+              <button
+                type="button"
+                onClick={() => {
+                  playSound("modal_open");
+                  onOpenOfflineManager();
+                }}
+                className="group inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 px-4 py-3 text-xs sm:text-sm font-bold text-cyan-700 dark:text-cyan-300 transition-all active:scale-[0.97]"
+              >
+                <HardDrive size={17} />
+                <span>إدارة المحتوى دون إنترنت</span>
               </button>
 
               <button

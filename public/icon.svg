@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#060B19" />
+      <stop offset="55%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#082F49" />
+    </linearGradient>
+    <linearGradient id="flaskGlow" x1="160" y1="100" x2="352" y2="412" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#22D3EE" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <linearGradient id="liquid" x1="150" y1="290" x2="362" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.92" />
+      <stop offset="100%" stop-color="#2563EB" stop-opacity="0.95" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  <rect x="16" y="16" width="480" height="480" rx="100" stroke="#38BDF8" stroke-opacity="0.22" stroke-width="4" />
+  <ellipse cx="256" cy="240" rx="176" ry="64" transform="rotate(-28 256 240)" stroke="#22D3EE" stroke-opacity="0.45" stroke-width="8" />
+  <ellipse cx="256" cy="240" rx="176" ry="64" transform="rotate(28 256 240)" stroke="#60A5FA" stroke-opacity="0.45" stroke-width="8" />
+  <path d="M214 112H298M226 112V196L146 346C136 364 149 388 170 388H342C363 388 376 364 366 346L286 196V112" stroke="url(#flaskGlow)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M180 292H332L356 340C362 354 352 372 336 372H176C160 372 150 354 156 340L180 292Z" fill="url(#liquid)" />
+  <circle cx="232" cy="332" r="12" fill="#BAE6FD" />
+  <circle cx="276" cy="316" r="9" fill="#E0F2FE" />
+  <circle cx="256" cy="264" r="8" fill="#67E8F9" />
+  <circle cx="256" cy="144" r="7" fill="#38BDF8" />
+</svg>

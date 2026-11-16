@@ -59,6 +59,13 @@ import {
   QuestionItem,
   StudentQuizAttempt,
 } from "../curriculum/types";
+import {
+  loadLastNavStateSync,
+  loadStudentKV,
+  saveLastNavState,
+  saveQuizAttemptIDB,
+  saveStudentKV,
+} from "../utils/offlineDb";
 
 interface BaccalaureateViewProps {
   progressState: BacProgressState;
@@ -80,13 +87,33 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
   onUpdateProgress,
   onAddXp,
 }) => {
-  // 1. Navigation state
-  const [view, setView] = useState<'selection' | 'list' | 'reader'>('selection');
-  const [selectedPartNum, setSelectedPartNum] = useState<1 | 2>(1);
-  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+  // 1. Navigation state (restores last visited view/part/lesson across reloads & offline launches)
+  const [view, setView] = useState<'selection' | 'list' | 'reader'>(() => {
+    const saved = loadLastNavStateSync();
+    if (saved?.bacView === 'reader' && saved.activeBacLessonId) return 'reader';
+    if (saved?.bacView === 'list') return 'list';
+    return 'selection';
+  });
+  const [selectedPartNum, setSelectedPartNum] = useState<1 | 2>(() => {
+    return loadLastNavStateSync()?.selectedPartNum === 2 ? 2 : 1;
+  });
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(() => {
+    return loadLastNavStateSync()?.activeBacLessonId || null;
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
   const [selectedChapterId, setSelectedChapterId] = useState<string>("all");
+
+  // Sync Baccalaureate navigation state to IndexedDB + localStorage
+  useEffect(() => {
+    saveLastNavState({
+      activePage: "baccalaureate",
+      bacView: view,
+      selectedPartNum,
+      activeBacLessonId: activeLessonId,
+      updatedAt: new Date().toISOString(),
+    }).catch(() => {});
+  }, [view, selectedPartNum, activeLessonId]);
 
   // 2. Exam and Interactive Suite state
   const [isQuizSuiteOpen, setIsQuizSuiteOpen] = useState(false);
@@ -96,7 +123,7 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
   const [isOfficialTextbookModalOpen, setIsOfficialTextbookModalOpen] = useState(false);
   const [isAuditReportOpen, setIsAuditReportOpen] = useState(false);
 
-  // 3. Persistent Analytics & Notes State
+  // 3. Persistent Analytics & Notes State (hydrated from localStorage + IndexedDB)
   const [savedHighlights, setSavedHighlights] = useState<SavedHighlight[]>(() => {
     try {
       const raw = localStorage.getItem("chem_lab_bac_highlights");
@@ -115,22 +142,37 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
     }
   });
 
-  // Save highlights to localStorage
+  useEffect(() => {
+    loadStudentKV<SavedHighlight[]>("bac_highlights").then((idbHl) => {
+      if (idbHl && idbHl.length > 0) {
+        setSavedHighlights((prev) => (prev.length >= idbHl.length ? prev : idbHl));
+      }
+    });
+    loadStudentKV<QuestionItem[]>("bac_wrong_questions").then((idbWrong) => {
+      if (idbWrong && idbWrong.length > 0) {
+        setWrongQuestionsBank((prev) => (prev.length >= idbWrong.length ? prev : idbWrong));
+      }
+    });
+  }, []);
+
+  // Save highlights to localStorage + IndexedDB
   useEffect(() => {
     try {
       localStorage.setItem("chem_lab_bac_highlights", JSON.stringify(savedHighlights));
     } catch (e) {
       console.warn("Could not save highlights to storage", e);
     }
+    saveStudentKV("bac_highlights", savedHighlights).catch(() => {});
   }, [savedHighlights]);
 
-  // Save wrong questions to localStorage
+  // Save wrong questions to localStorage + IndexedDB
   useEffect(() => {
     try {
       localStorage.setItem("chem_lab_bac_wrong_questions", JSON.stringify(wrongQuestionsBank));
     } catch (e) {
       console.warn("Could not save wrong questions to storage", e);
     }
+    saveStudentKV("bac_wrong_questions", wrongQuestionsBank).catch(() => {});
   }, [wrongQuestionsBank]);
 
   // Active Part Data
@@ -263,8 +305,9 @@ export const BaccalaureateView: React.FC<BaccalaureateViewProps> = ({
     playSound("click");
   };
 
-  // Save quiz attempt and update wrong questions bank
+  // Save quiz attempt to IndexedDB and update wrong questions bank
   const handleSaveQuizAttempt = (attempt: StudentQuizAttempt) => {
+    saveQuizAttemptIDB(attempt).catch(() => {});
     onUpdateProgress(attempt.lessonId, attempt.scorePercent >= 60, attempt.scorePercent);
     if (attempt.scorePercent >= 80) {
       onAddXp(100);

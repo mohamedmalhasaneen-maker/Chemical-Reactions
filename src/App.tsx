@@ -51,7 +51,17 @@ import {
 } from "./components/CurriculumView";
 import { BaccalaureateView } from "./components/BaccalaureateView";
 import { SoundSettingsModal } from "./components/SoundSettingsModal";
+import { OfflineContentManagerModal } from "./components/OfflineContentManagerModal";
+import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { playSound, soundEngine, SoundFeedbackConfig, stopAllSounds } from "./utils/soundEngine";
+import {
+  loadAiReactionCache,
+  loadLastNavStateSync,
+  loadStudentKV,
+  saveAiReactionCache,
+  saveLastNavState,
+  saveStudentKV,
+} from "./utils/offlineDb";
 
 const STORAGE_KEYS = {
   theme: "chem_lab_theme",
@@ -61,6 +71,7 @@ const STORAGE_KEYS = {
   audio: "chem_lab_audio_mixer_v2",
   muted: "chem_lab_audio_muted_v2",
   bacProgress: "chem_lab_bac_progress_v1",
+  pendingSync: "chem_lab_pending_sync_v1",
 };
 
 const DEFAULT_USER_STATS: UserStats = {
@@ -108,11 +119,26 @@ export function App() {
     }
   }, [isDark]);
 
-  // 2. Navigation & Modal Overlays
-  const [activePage, setActivePage] = useState<AppPage>("home");
+  // 2. Navigation, PWA Status & Modal Overlays
+  const { isOnline, needRefresh, applyUpdate } = useOnlineStatus();
+  const [activePage, setActivePage] = useState<AppPage>(() => {
+    const saved = loadLastNavStateSync();
+    return saved?.activePage || "home";
+  });
   const [periodicModalOpen, setPeriodicModalOpen] = useState(false);
   const [instrumentsModalOpen, setInstrumentsModalOpen] = useState(false);
   const [soundModalOpen, setSoundModalOpen] = useState(false);
+  const [offlineManagerOpen, setOfflineManagerOpen] = useState(false);
+
+  // Persist last active page to IndexedDB + localStorage so offline reopen resumes from same section
+  useEffect(() => {
+    const existing = loadLastNavStateSync();
+    saveLastNavState({
+      ...existing,
+      activePage,
+      updatedAt: new Date().toISOString(),
+    }).catch(() => {});
+  }, [activePage]);
 
   // 3. Sound Engine Reactive State
   const [soundConfig, setSoundConfig] = useState<SoundFeedbackConfig>(
@@ -284,14 +310,59 @@ export function App() {
     }
   });
 
-  // Persist local settings
+  // Hydrate & mirror core student progress with IndexedDB for durable offline persistence
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const [idbStats, idbBac, idbLog, idbChems] = await Promise.all([
+        loadStudentKV<UserStats>("user_stats"),
+        loadStudentKV<BacProgressState>("bac_progress"),
+        loadStudentKV<ExperimentLogEntry[]>("experiment_log"),
+        loadStudentKV<Chemical[]>("custom_chemicals"),
+      ]);
+      if (!active) return;
+
+      if (idbStats) {
+        setUserStats((prev) => ({
+          ...prev,
+          scorePoints: Math.max(prev.scorePoints, idbStats.scorePoints || 0),
+          experimentsRun: Math.max(prev.experimentsRun, idbStats.experimentsRun || 0),
+          completedLessons: Array.from(
+            new Set([...prev.completedLessons, ...(idbStats.completedLessons || [])])
+          ),
+          unlockedBadges: Array.from(
+            new Set([...prev.unlockedBadges, ...(idbStats.unlockedBadges || [])])
+          ),
+        }));
+      }
+      if (idbBac) {
+        setBacProgress((prev) => ({ ...idbBac, ...prev }));
+      }
+      if (idbLog && idbLog.length > 0) {
+        setExperimentLog((prev) => (prev.length >= idbLog.length ? prev : idbLog));
+      }
+      if (idbChems && idbChems.length > 0) {
+        setCustomChemicals((prev) => (prev.length >= idbChems.length ? prev : idbChems));
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Persist local settings & mirror into IndexedDB
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify(userStats));
     } catch {
       // ignore
     }
+    saveStudentKV("user_stats", userStats).catch(() => {});
   }, [userStats]);
+
+  useEffect(() => {
+    saveStudentKV("bac_progress", bacProgress).catch(() => {});
+  }, [bacProgress]);
 
   useEffect(() => {
     try {
@@ -299,6 +370,7 @@ export function App() {
     } catch {
       // ignore
     }
+    saveStudentKV("experiment_log", experimentLog).catch(() => {});
   }, [experimentLog]);
 
   useEffect(() => {
@@ -310,6 +382,7 @@ export function App() {
     } catch {
       // ignore
     }
+    saveStudentKV("custom_chemicals", customChemicals).catch(() => {});
   }, [customChemicals]);
 
   useEffect(() => {
@@ -319,14 +392,36 @@ export function App() {
     } catch {
       // ignore
     }
+    saveStudentKV("audio_settings", { audioSettings, isMuted }).catch(() => {});
   }, [audioSettings, isMuted]);
 
-  // 7. Firebase Auth & Cloud Profile Sync (/lab_profiles/{userId})
+  // 7. Firebase Auth & Conflict-Safe Cloud Profile Sync (/lab_profiles/{userId})
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+  const [hasPendingSync, setHasPendingSync] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.pendingSync) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const markPendingSync = useCallback((pending: boolean) => {
+    setHasPendingSync(pending);
+    try {
+      localStorage.setItem(STORAGE_KEYS.pendingSync, String(pending));
+    } catch {
+      // ignore
+    }
+    saveStudentKV("pending_sync", pending).catch(() => {});
+  }, []);
 
   const syncStatsToFirestore = useCallback(
     async (uid: string, displayName: string, statsToSync: UserStats) => {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        markPendingSync(true);
+        return;
+      }
       const path = `lab_profiles/${uid}`;
       const profileRef = doc(db, "lab_profiles", uid);
       setIsSyncingCloud(true);
@@ -388,7 +483,9 @@ export function App() {
             unlockedBadges: mergedBadges,
           }));
         }
+        markPendingSync(false);
       } catch (err) {
+        markPendingSync(true);
         try {
           handleFirestoreError(err, OperationType.WRITE, path);
         } catch {
@@ -398,13 +495,13 @@ export function App() {
         setIsSyncingCloud(false);
       }
     },
-    []
+    [markPendingSync]
   );
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
-      if (user && user.emailVerified) {
+      if (user && user.emailVerified && navigator.onLine) {
         syncStatsToFirestore(
           user.uid,
           user.displayName || "باحث كيميائي",
@@ -415,6 +512,30 @@ export function App() {
     return () => unsub();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const statsHydratedRef = useRef(false);
+  useEffect(() => {
+    if (!statsHydratedRef.current) {
+      statsHydratedRef.current = true;
+      return;
+    }
+    if (!isOnline && currentUser && currentUser.emailVerified) {
+      markPendingSync(true);
+    }
+  }, [userStats, isOnline, currentUser, markPendingSync]);
+
+  // Auto-sync queued offline changes safely when connection returns
+  useEffect(() => {
+    if (isOnline && currentUser && currentUser.emailVerified && hasPendingSync) {
+      syncStatsToFirestore(
+        currentUser.uid,
+        currentUser.displayName || "باحث كيميائي",
+        userStats
+      ).then(() => {
+        showToast("تمت مزامنة تقدمك السحابي تلقائياً بعد عودة الاتصال");
+      });
+    }
+  }, [isOnline, currentUser, hasPendingSync, userStats, syncStatsToFirestore, showToast]);
 
   const handleSignInGoogle = async () => {
     try {
@@ -598,16 +719,34 @@ export function App() {
     [activePage, periodicModalOpen, playSoundEffect, showToast]
   );
 
-  // Resolve chemical reaction via preset, AI, or guaranteed scientific fallback
+  // Resolve chemical reaction via preset, IndexedDB AI cache, live AI, or guaranteed local scientific engine
   const resolveReactionDetails = useCallback(
     async (reactantsToMix: Chemical[]): Promise<{ reaction: ReactionDetail; source: ExperimentLogEntry["source"] }> => {
-      // 1. Check calibrated stoichiometric reactions first
+      // 1. Check calibrated stoichiometric reactions first (works 100% offline)
       const predefined = findPredefinedReaction(reactantsToMix);
       if (predefined) {
         return { reaction: predefined, source: "preset" };
       }
 
-      // 2. Query AI predictor endpoint
+      // 2. Check previously cached AI reaction predictions in IndexedDB (offline-ready!)
+      const reactantIds = reactantsToMix.map((r) => r.id);
+      const cachedAi = await loadAiReactionCache(reactantIds);
+      if (cachedAi) {
+        return { reaction: cachedAi.reaction, source: "ai" };
+      }
+
+      // 3. If offline, clearly inform user that generative AI requires internet and seamlessly use local engine
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        showToast(
+          "خدمة الذكاء الاصطناعي التوليدي تتطلب اتصالاً بالإنترنت — تم تشغيل محرك المحاكاة المحلي بنجاح."
+        );
+        return {
+          reaction: generateScientificFallbackReaction(reactantsToMix),
+          source: "fallback",
+        };
+      }
+
+      // 4. Query AI predictor endpoint when online and cache result in IndexedDB
       try {
         setIsPredictingAi(true);
         const res = await fetch("/api/reaction/predict", {
@@ -647,6 +786,14 @@ export function App() {
               "تم تحليل المزيج الكيميائي وحساب حالة التوازن للمواد المضافة.",
             molecularExplanation: data.molecularExplanation,
           };
+
+          // Cache AI explanation & reaction locally for future offline access
+          saveAiReactionCache(
+            reactantIds,
+            reactantsToMix.map((r) => r.name),
+            reaction
+          ).catch(() => {});
+
           return { reaction, source: "ai" };
         }
       } catch (err) {
@@ -655,13 +802,13 @@ export function App() {
         setIsPredictingAi(false);
       }
 
-      // 3. Fallback to scientific rule generator
+      // 5. Fallback to local scientific rule generator
       return {
         reaction: generateScientificFallbackReaction(reactantsToMix),
         source: "fallback",
       };
     },
-    []
+    [showToast]
   );
 
   // 10. Multi-State Reaction Engine Handlers (Start, Pause, Resume, Reset)
@@ -931,6 +1078,19 @@ export function App() {
         }}
         beakerCount={selectedReactants.length}
         scorePoints={userStats.scorePoints}
+        isOnline={isOnline}
+        isSyncingCloud={isSyncingCloud}
+        hasPendingSync={hasPendingSync}
+        needRefresh={needRefresh}
+        onApplyUpdate={() => {
+          showToast("جارٍ تحديث المنصة بأمان مع الاحتفاظ بجميع بياناتك...");
+          applyUpdate();
+        }}
+        onOpenOfflineManager={() => {
+          playSound("modal_open");
+          setOfflineManagerOpen(true);
+        }}
+        onNotify={showToast}
       />
 
       {/* Main Responsive Viewport Container */}
@@ -944,6 +1104,8 @@ export function App() {
             }}
             onRunQuickExperiment={handleRunQuickExperiment}
             onStartLesson={handleStartLesson}
+            onOpenOfflineManager={() => setOfflineManagerOpen(true)}
+            onNotify={showToast}
           />
         )}
 
@@ -1069,6 +1231,14 @@ export function App() {
       <SoundSettingsModal
         isOpen={soundModalOpen}
         onClose={() => setSoundModalOpen(false)}
+      />
+
+      {/* Offline Content Manager Modal */}
+      <OfflineContentManagerModal
+        isOpen={offlineManagerOpen}
+        onClose={() => setOfflineManagerOpen(false)}
+        isOnline={isOnline}
+        onNotify={showToast}
       />
 
       {/* Non-intrusive Accessible Scientific Toast Notification */}

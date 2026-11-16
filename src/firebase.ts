@@ -1,21 +1,41 @@
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
-  User 
+  User,
 } from 'firebase/auth';
-import { 
-  getFirestore, 
-  doc, 
-  getDocFromServer 
+import {
+  initializeFirestore,
+  getFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  doc,
+  getDocFromServer,
+  Firestore,
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+let firestoreInstance: Firestore;
+try {
+  firestoreInstance = initializeFirestore(
+    app,
+    {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    },
+    firebaseConfig.firestoreDatabaseId
+  );
+} catch {
+  firestoreInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+}
+
+export const db = firestoreInstance;
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
@@ -45,7 +65,11 @@ export interface FirestoreErrorInfo {
   };
 }
 
-export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+export function handleFirestoreError(
+  error: unknown,
+  operationType: OperationType,
+  path: string | null
+) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
@@ -54,25 +78,29 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
       emailVerified: auth.currentUser?.emailVerified || false,
       isAnonymous: auth.currentUser?.isAnonymous || false,
       tenantId: auth.currentUser?.tenantId || null,
-      providerInfo: auth.currentUser?.providerData?.map(provider => ({
-        providerId: provider.providerId,
-        email: provider.email,
-      })) || []
+      providerInfo:
+        auth.currentUser?.providerData?.map((provider) => ({
+          providerId: provider.providerId,
+          email: provider.email,
+        })) || [],
     },
     operationType,
-    path
+    path,
   };
   console.error('[Firestore Security Error Details]:', JSON.stringify(errInfo, null, 2));
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Connection test helper as required by Firebase skill
+// Connection test helper (skipped safely when device is offline)
 export async function testConnection() {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return;
+  }
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
+      console.warn('Firestore client is currently offline; using local persistent cache.');
     }
   }
 }

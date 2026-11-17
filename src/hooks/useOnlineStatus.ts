@@ -1,27 +1,11 @@
 import { useEffect, useState } from "react";
-import { useRegisterSW } from "virtual:pwa-register/react";
 
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState<boolean>(() =>
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
-
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    offlineReady: [offlineReady],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegisteredSW(_swUrl, registration) {
-      if (registration) {
-        // Check for SW updates safely every 30 minutes when online
-        window.setInterval(() => {
-          if (navigator.onLine) {
-            registration.update().catch(() => {});
-          }
-        }, 30 * 60 * 1000);
-      }
-    },
-  });
+  const [needRefresh, setNeedRefresh] = useState(false);
+  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -29,6 +13,23 @@ export function useOnlineStatus() {
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then((reg) => {
+        setRegistration(reg);
+        reg.addEventListener("updatefound", () => {
+          if (reg.installing) {
+            reg.installing.addEventListener("statechange", (e) => {
+              const worker = e.target as ServiceWorker;
+              if (worker.state === "installed" && navigator.serviceWorker.controller) {
+                setNeedRefresh(true);
+              }
+            });
+          }
+        });
+      });
+    }
+
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
@@ -36,14 +37,16 @@ export function useOnlineStatus() {
   }, []);
 
   const applyUpdate = () => {
-    updateServiceWorker(true);
-    setNeedRefresh(false);
+    if (registration && registration.waiting) {
+      registration.waiting.postMessage({ type: "SKIP_WAITING" });
+    }
+    window.location.reload();
   };
 
   return {
     isOnline,
     needRefresh,
-    offlineReady,
+    offlineReady: true,
     applyUpdate,
   };
 }

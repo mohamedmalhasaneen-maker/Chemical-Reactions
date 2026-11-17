@@ -21,6 +21,8 @@ export default defineConfig(() => {
           'assets/aistudio/WhatsApp_Image_2026-09-10_at_11.57.19_PM_b38793ef.jpeg',
         ],
         workbox: {
+          clientsClaim: true,
+          skipWaiting: true,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}'],
           globIgnores: ['**/assets/aistudio/*.pdf'],
           maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,

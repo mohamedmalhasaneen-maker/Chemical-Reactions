@@ -39,6 +39,7 @@ interface NavigationChromeProps {
   needRefresh: boolean;
   onApplyUpdate: () => void;
   onOpenOfflineManager: () => void;
+  onOpenReagentCabinet: () => void;
   onNotify?: (msg: string) => void;
 }
 
@@ -123,6 +124,7 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
   needRefresh,
   onApplyUpdate,
   onOpenOfflineManager,
+  onOpenReagentCabinet,
   onNotify,
 }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -244,6 +246,16 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
             >
               <HardDrive size={14} className="text-cyan-600 dark:text-cyan-400" />
               <span className="hidden 2xl:inline">دون إنترنت</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onOpenReagentCabinet}
+              title="خزانة الكواشف الكيميائية الشاملة"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cyan-500/40 dark:border-cyan-400/40 bg-cyan-500/10 dark:bg-cyan-400/15 px-2.5 text-[11px] font-bold text-cyan-700 dark:text-cyan-300 hover:border-cyan-500 transition-all active:scale-95 shadow-xs shrink-0"
+            >
+              <FlaskConical size={14} className="text-cyan-600 dark:text-cyan-400" />
+              <span>خزانة الكواشف</span>
             </button>
 
             {/* Scientific XP Badge */}
@@ -493,6 +505,27 @@ export const NavigationChrome: React.FC<NavigationChromeProps> = ({
                       </span>
                       <span className="text-[11px] opacity-80 block">
                         تنزيل الدروس والصوتيات والكتب PDF
+                      </span>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenReagentCabinet();
+                    setDrawerOpen(false);
+                  }}
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl p-3 text-start transition active:scale-[0.98] border border-cyan-500/50 bg-gradient-to-r from-cyan-500/15 via-blue-500/10 to-transparent hover:from-cyan-500/25 text-cyan-700 dark:text-cyan-200 shadow-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FlaskConical size={18} className="text-cyan-400 shrink-0" />
+                    <div>
+                      <span className="text-xs sm:text-sm font-extrabold block">
+                        خزانة الكواشف الكيميائية
+                      </span>
+                      <span className="text-[11px] opacity-80 block">
+                        استعراض جميع الكواشف، الصيغ والتحذيرات
                       </span>
                     </div>
                   </div>

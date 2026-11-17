@@ -52,6 +52,7 @@ import {
 import { BaccalaureateView } from "./components/BaccalaureateView";
 import { SoundSettingsModal } from "./components/SoundSettingsModal";
 import { OfflineContentManagerModal } from "./components/OfflineContentManagerModal";
+import { ReagentCabinetModal } from "./components/ReagentCabinetModal";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { playSound, soundEngine, SoundFeedbackConfig, stopAllSounds } from "./utils/soundEngine";
 import {
@@ -129,6 +130,7 @@ export function App() {
   const [instrumentsModalOpen, setInstrumentsModalOpen] = useState(false);
   const [soundModalOpen, setSoundModalOpen] = useState(false);
   const [offlineManagerOpen, setOfflineManagerOpen] = useState(false);
+  const [reagentCabinetModalOpen, setReagentCabinetModalOpen] = useState(false);
 
   // Persist last active page to IndexedDB + localStorage so offline reopen resumes from same section
   useEffect(() => {
@@ -1090,6 +1092,10 @@ export function App() {
           playSound("modal_open");
           setOfflineManagerOpen(true);
         }}
+        onOpenReagentCabinet={() => {
+          playSound("modal_open");
+          setReagentCabinetModalOpen(true);
+        }}
         onNotify={showToast}
       />
 
@@ -1239,6 +1245,15 @@ export function App() {
         onClose={() => setOfflineManagerOpen(false)}
         isOnline={isOnline}
         onNotify={showToast}
+      />
+
+      {/* Reagent Cabinet Modal */}
+      <ReagentCabinetModal
+        isOpen={reagentCabinetModalOpen}
+        onClose={() => setReagentCabinetModalOpen(false)}
+        customChemicals={customChemicals}
+        selectedReactants={selectedReactants}
+        onAddChemical={handleAddChemical}
       />
 
       {/* Non-intrusive Accessible Scientific Toast Notification */}
